@@ -16,6 +16,7 @@ package local
 import (
 	"bufio"
 	"errors"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -38,6 +39,32 @@ var (
 	m4 = model.Metric{"label": "value4"}
 	m5 = model.Metric{"label": "value5"}
 )
+
+func TestCountUnknownEntries(t *testing.T) {
+	dir1, err := ioutil.TempDir("", "/tmpdir")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer os.RemoveAll(dir1)
+
+	if _, err := ioutil.TempDir("", "/tmpdir/unexpected"); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := ioutil.TempDir("", "/tmpdir/lost+found"); err != nil {
+		t.Fatal(err)
+	}
+
+	dirpath, err := ioutil.ReadDir(dir1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if want, got := uint(1), countUnknownEntries(dirpath); got != want {
+		t.Errorf("want %d, got %d", want, got)
+	}
+}
 
 func newTestPersistence(t *testing.T, encoding chunk.Encoding) (*persistence, testutil.Closer) {
 	chunk.DefaultEncoding = encoding
